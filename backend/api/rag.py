@@ -380,7 +380,7 @@ class QueryPipeline:
             "response_time": round(elapsed, 2),
         }
 
-    def query_stream(self, user_message: str, chat_history: list[dict] = None):
+    def query_stream(self, user_message: str, chat_history: list[dict] = None, session_id: int = None):
         """Streaming query. Yields SSE-formatted data chunks."""
         start = time.time()
 
@@ -403,4 +403,4 @@ class QueryPipeline:
         elapsed = time.time() - start
 
         # Send final metadata
-        yield f"data: {json.dumps({'done': True, 'response_time': round(elapsed, 2), 'sources': search_results})}\n\n"
+        yield f"data: {json.dumps({'done': True, 'response_time': round(elapsed, 2), 'sources': search_results, 'session_id': session_id})}\n\n"

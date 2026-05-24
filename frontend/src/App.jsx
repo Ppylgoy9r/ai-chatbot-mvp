@@ -25,7 +25,16 @@ function AdminRoute({ children }) {
 
 function ChatPage() {
   return (
-    <div className="min-h-screen bg-gray-950">
+    <div className="min-h-screen bg-gray-950 relative">
+      {/* Subtle Admin Login / Dashboard link in the top right corner */}
+      <div className="absolute top-6 right-6 z-50">
+        <a
+          href="/admin"
+          className="px-4 py-2 bg-gray-900/60 hover:bg-gray-800/80 text-gray-400 hover:text-white rounded-lg text-sm font-medium border border-gray-800 transition duration-200 shadow-lg backdrop-blur"
+        >
+          Admin Portal
+        </a>
+      </div>
       <ChatWidget />
       <div className="flex items-center justify-center h-screen pointer-events-none">
         <div className="text-center pointer-events-none">
@@ -54,14 +63,7 @@ export default function App() {
       <AuthProvider>
         <Routes>
           <Route path="/login" element={<Login />} />
-          <Route
-            path="/"
-            element={
-              <ProtectedRoute>
-                <ChatPage />
-              </ProtectedRoute>
-            }
-          />
+          <Route path="/" element={<ChatPage />} />
           <Route
             path="/admin"
             element={

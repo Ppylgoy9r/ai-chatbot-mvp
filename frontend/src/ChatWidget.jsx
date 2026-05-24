@@ -116,9 +116,10 @@ export default function ChatWidget() {
           };
           return updated;
         });
-        // Refresh sessions if this was a new session
-        if (!newSessionId) loadSessions();
-        else loadSessions();
+        if (metadata.session_id) {
+          setActiveSession(metadata.session_id);
+        }
+        loadSessions();
       },
       onError: (err) => {
         setIsStreaming(false);
@@ -193,9 +194,11 @@ export default function ChatWidget() {
                   <Settings size={18} />
                 </a>
               )}
-              <button onClick={logout} className="text-white/70 hover:text-white" title="Logout">
-                <LogOut size={18} />
-              </button>
+              {user && (
+                <button onClick={logout} className="text-white/70 hover:text-white" title="Logout">
+                  <LogOut size={18} />
+                </button>
+              )}
               <button onClick={() => setIsOpen(false)} className="text-white/70 hover:text-white">
                 <X size={20} />
               </button>
@@ -308,7 +311,7 @@ export default function ChatWidget() {
               )}
             </div>
             <p className="text-[10px] text-gray-500 mt-1.5 text-center">
-              Powered by Ollama (on-premises) &middot; {user?.username}
+              Powered by Ollama (on-premises) {user ? `· ${user.username}` : ""}
             </p>
           </div>
         </div>

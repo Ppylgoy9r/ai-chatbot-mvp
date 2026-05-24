@@ -27,7 +27,7 @@ class User(AbstractUser):
 class ChatSession(models.Model):
     """A conversation session between a user and the chatbot."""
     id = models.BigAutoField(primary_key=True)
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="chat_sessions")
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="chat_sessions", null=True, blank=True)
     title = models.CharField(max_length=255, default="New Chat")
     started_at = models.DateTimeField(auto_now_add=True)
 

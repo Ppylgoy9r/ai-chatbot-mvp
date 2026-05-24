@@ -8,6 +8,22 @@ from datetime import timedelta
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Load .env file manually into os.environ
+env_path = BASE_DIR / ".env"
+if env_path.exists():
+    with open(env_path) as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith("#"):
+                try:
+                    key, val = line.split("=", 1)
+                    # Clean up quotes if present
+                    val = val.strip("\"'")
+                    os.environ[key.strip()] = val.strip()
+                except ValueError:
+                    pass
+
+
 # ----- Core -----
 SECRET_KEY = os.environ.get("SECRET_KEY", "django-insecure-change-me-in-production")
 DEBUG = os.environ.get("DEBUG", "True").lower() in ("true", "1", "yes")
@@ -132,3 +148,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # ----- Custom User Model -----
 AUTH_USER_MODEL = "api.User"
+
+# ----- Embedding Security -----
+# Allow the chatbot page to be embedded as an iframe in other apps (like Sysforge)
+X_FRAME_OPTIONS = "ALLOWALL"

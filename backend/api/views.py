@@ -61,31 +61,47 @@ class MeView(APIView):
 class ChatSessionListCreateView(generics.ListCreateAPIView):
     """List user's chat sessions or create a new one."""
     serializer_class = ChatSessionSerializer
+    permission_classes = [permissions.AllowAny]
 
     def get_queryset(self):
-        return ChatSession.objects.filter(user=self.request.user)
+        if self.request.user.is_authenticated:
+            return ChatSession.objects.filter(user=self.request.user)
+        # Guest users manage session IDs in local storage, so listing is not needed
+        return ChatSession.objects.none()
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        if self.request.user.is_authenticated:
+            serializer.save(user=self.request.user)
+        else:
+            serializer.save(user=None)
 
 
 class ChatSessionDetailView(generics.RetrieveDestroyAPIView):
     """Get or delete a specific chat session."""
     serializer_class = ChatSessionSerializer
+    permission_classes = [permissions.AllowAny]
 
     def get_queryset(self):
-        return ChatSession.objects.filter(user=self.request.user)
+        if self.request.user.is_authenticated:
+            return ChatSession.objects.filter(user=self.request.user)
+        return ChatSession.objects.filter(user__isnull=True)
 
 
 class ChatMessageListView(generics.ListAPIView):
     """List all messages in a chat session."""
     serializer_class = ChatMessageSerializer
+    permission_classes = [permissions.AllowAny]
 
     def get_queryset(self):
         session_id = self.kwargs["session_id"]
+        if self.request.user.is_authenticated:
+            return ChatMessage.objects.filter(
+                session_id=session_id,
+                session__user=self.request.user,
+            )
         return ChatMessage.objects.filter(
             session_id=session_id,
-            session__user=self.request.user,
+            session__user__isnull=True,
         )
 
 
@@ -95,6 +111,7 @@ class ChatQueryView(APIView):
     POST /api/chat/query/
     Body: { "session_id": 1, "message": "What is CQRS?" }
     """
+    permission_classes = [permissions.AllowAny]
 
     def post(self, request):
         serializer = ChatMessageCreateSerializer(data=request.data)
@@ -105,9 +122,14 @@ class ChatQueryView(APIView):
 
         # Get or create session
         if session_id:
-            session = ChatSession.objects.filter(
-                id=session_id, user=request.user
-            ).first()
+            if request.user.is_authenticated:
+                session = ChatSession.objects.filter(
+                    id=session_id, user=request.user
+                ).first()
+            else:
+                session = ChatSession.objects.filter(
+                    id=session_id, user__isnull=True
+                ).first()
             if not session:
                 return Response(
                     {"error": "Session not found"},
@@ -116,9 +138,14 @@ class ChatQueryView(APIView):
         else:
             # Auto-generate title from first message
             title = user_message[:50] + ("..." if len(user_message) > 50 else "")
-            session = ChatSession.objects.create(
-                user=request.user, title=title
-            )
+            if request.user.is_authenticated:
+                session = ChatSession.objects.create(
+                    user=request.user, title=title
+                )
+            else:
+                session = ChatSession.objects.create(
+                    user=None, title=title
+                )
 
         # Save user message
         ChatMessage.objects.create(
@@ -140,7 +167,7 @@ class ChatQueryView(APIView):
             response_time = None
 
             try:
-                for chunk in pipeline.query_stream(user_message, chat_history):
+                for chunk in pipeline.query_stream(user_message, chat_history, session_id=session.id):
                     yield chunk
                     # Parse tokens for saving
                     try:
@@ -174,6 +201,7 @@ class ChatQueryView(APIView):
         response["Cache-Control"] = "no-cache"
         response["X-Accel-Buffering"] = "no"
         return response
+
 
 
 # ============================================================
@@ -258,7 +286,7 @@ class FAQListCreateView(generics.ListCreateAPIView):
     def get_permissions(self):
         if self.request.method == "POST":
             return [IsAdmin()]
-        return [permissions.IsAuthenticated()]
+        return [permissions.AllowAny()]
 
 
 class FAQDetailView(generics.RetrieveUpdateDestroyAPIView):
@@ -280,7 +308,7 @@ class NavigationGuideListCreateView(generics.ListCreateAPIView):
     def get_permissions(self):
         if self.request.method == "POST":
             return [IsAdmin()]
-        return [permissions.IsAuthenticated()]
+        return [permissions.AllowAny()]
 
 
 class NavigationGuideDetailView(generics.RetrieveUpdateDestroyAPIView):
